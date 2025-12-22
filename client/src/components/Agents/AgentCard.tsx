@@ -94,7 +94,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onSelect, className = '' }
             size="icon"
             variant="ghost"
             className={cn(
-              'absolute right-2 top-2 z-10 h-8 w-8 p-1.5',
+              'absolute right-2 top-2 h-8 w-8 p-1.5',
               'focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
               isLoading && 'cursor-not-allowed opacity-50',
               '[&]:cursor-pointer',
