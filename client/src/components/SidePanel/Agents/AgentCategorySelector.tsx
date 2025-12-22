@@ -51,10 +51,16 @@ const AgentCategorySelector: React.FC<{ className?: string }> = ({ className }) 
     return category.label;
   };
 
-  const comboboxItems = categories.map((category) => ({
-    label: getCategoryLabel(category),
-    value: category.value,
-  }));
+  // Filter out special collection categories (starred, promoted, all) - these are not actual agent categories
+  const comboboxItems = categories
+    .filter((category) => {
+      const value = category.value?.toLowerCase();
+      return value !== 'starred' && value !== 'promoted' && value !== 'all';
+    })
+    .map((category) => ({
+      label: getCategoryLabel(category),
+      value: category.value,
+    }));
 
   const getCategoryDisplayValue = (value: string) => {
     const categoryItem = comboboxItems.find((c) => c.value === value);

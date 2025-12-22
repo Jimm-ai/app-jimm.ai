@@ -112,6 +112,11 @@ const agentSchema = new Schema<IAgent>(
       default: false,
       index: true,
     },
+    is_default_starred: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     /** MCP server names extracted from tools for efficient querying */
     mcpServerNames: {
       type: [String],

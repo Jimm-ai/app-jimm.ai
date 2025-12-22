@@ -1,6 +1,7 @@
 import mongoose, { FilterQuery } from 'mongoose';
 import type { IUser, BalanceConfig, CreateUserRequest, UserDeleteResult } from '~/types';
 import { signPayload } from '~/crypto';
+import logger from '~/config/winston';
 
 /** Factory function that takes mongoose instance and returns the methods */
 export function createUserMethods(mongoose: typeof import('mongoose')) {
@@ -114,8 +115,33 @@ export function createUserMethods(mongoose: typeof import('mongoose')) {
       }).lean();
     }
 
+    // Automatically star default starred agents for new users
+    // This enables a curated onboarding experience where new users immediately
+    // have access to recommended agents without needing to discover and star them manually
+    try {
+      const Agent = mongoose.models.Agent;
+      const defaultStarredAgents = await Agent.find({ is_default_starred: true })
+        .select('id')
+        .lean();
+      if (defaultStarredAgents && defaultStarredAgents.length > 0) {
+        const starredAgentIds = defaultStarredAgents.map((agent) => agent.id);
+        await User.findByIdAndUpdate(user._id, {
+          $set: { starredAgents: starredAgentIds },
+        });
+        // Log successful auto-starring for audit purposes
+        logger.debug(
+          `[createUser] Auto-starred ${starredAgentIds.length} default agent(s) for new user ${user._id}`,
+        );
+      }
+    } catch (error) {
+      // Log error but don't fail user creation if auto-starring fails
+      // This ensures user registration succeeds even if agent auto-starring encounters issues
+      logger.error('[createUser] Error auto-starring default agents for new user:', error);
+    }
+
     if (returnUser) {
-      return user.toObject() as Partial<IUser>;
+      const updatedUser = await User.findById(user._id).lean();
+      return updatedUser as Partial<IUser>;
     }
     return user._id as mongoose.Types.ObjectId;
   }
