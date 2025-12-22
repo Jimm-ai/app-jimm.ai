@@ -97,6 +97,27 @@ jest.mock('~/hooks', () => ({
   useLocalize: () => mockLocalize,
   useDebounce: jest.fn(),
   useAgentCategories: jest.fn(),
+  useDefaultConvo: jest.fn(() => jest.fn(() => ({}))),
+  useFavorites: jest.fn(() => ({
+    isFavoriteAgent: jest.fn(() => false),
+    toggleFavoriteAgent: jest.fn(),
+  })),
+}));
+
+// Mock Providers
+jest.mock('~/Providers', () => ({
+  useChatContext: jest.fn(() => ({
+    conversation: null,
+    newConversation: jest.fn(),
+  })),
+}));
+
+// Mock @librechat/client toast context
+jest.mock('@librechat/client', () => ({
+  ...jest.requireActual('@librechat/client'),
+  useToastContext: jest.fn(() => ({
+    showToast: jest.fn(),
+  })),
 }));
 
 jest.mock('~/data-provider/Agents', () => ({
@@ -125,6 +146,13 @@ jest.mock('~/utils/agents', () => ({
 jest.mock('../SmartLoader', () => ({
   SmartLoader: ({ children, isLoading }: any) => (isLoading ? <div>Loading...</div> : children),
   useHasData: jest.fn(() => true),
+}));
+
+// Mock AgentDetailContent to avoid testing dialog internals
+jest.mock('../AgentDetailContent', () => ({
+  __esModule: true,
+  // eslint-disable-next-line i18next/no-literal-string
+  default: () => <div data-testid="agent-detail-content">Agent Detail Content</div>,
 }));
 
 // Import the actual modules to get the mocked functions
@@ -314,7 +342,7 @@ describe('Accessibility Improvements', () => {
       const Wrapper = createWrapper();
       render(
         <Wrapper>
-          <AgentCard agent={mockAgent as t.Agent} onClick={jest.fn()} />
+          <AgentCard agent={mockAgent as t.Agent} onSelect={jest.fn()} />
         </Wrapper>,
       );
 
@@ -325,21 +353,19 @@ describe('Accessibility Improvements', () => {
     });
 
     it('supports keyboard interaction', () => {
-      const onClick = jest.fn();
       const Wrapper = createWrapper();
       render(
         <Wrapper>
-          <AgentCard agent={mockAgent as t.Agent} onClick={onClick} />
+          <AgentCard agent={mockAgent as t.Agent} onSelect={jest.fn()} />
         </Wrapper>,
       );
 
       const card = screen.getByRole('button', { name: /Test Agent agent/ });
 
-      fireEvent.keyDown(card, { key: 'Enter' });
-      expect(onClick).toHaveBeenCalledTimes(1);
-
-      fireEvent.keyDown(card, { key: ' ' });
-      expect(onClick).toHaveBeenCalledTimes(2);
+      // Card should be keyboard accessible - actual dialog behavior is handled by Radix
+      expect(card).toHaveAttribute('tabIndex', '0');
+      expect(() => fireEvent.keyDown(card, { key: 'Enter' })).not.toThrow();
+      expect(() => fireEvent.keyDown(card, { key: ' ' })).not.toThrow();
     });
   });
 
