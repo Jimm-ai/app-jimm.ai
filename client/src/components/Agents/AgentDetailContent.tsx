@@ -12,8 +12,10 @@ import {
 } from 'librechat-data-provider';
 import type t from 'librechat-data-provider';
 import { useLocalize, useDefaultConvo, useFavorites } from '~/hooks';
-import { renderAgentAvatar, clearMessagesCache } from '~/utils';
+import { renderAgentAvatar, clearMessagesCache, cn } from '~/utils';
 import { useChatContext } from '~/Providers';
+import { useStarAgentMutation, useUnstarAgentMutation } from '~/data-provider/Agents';
+import StarIcon from './StarIcon';
 
 interface SupportContact {
   name?: string;
@@ -40,10 +42,27 @@ const AgentDetailContent: React.FC<AgentDetailContentProps> = ({ agent }) => {
   const { conversation, newConversation } = useChatContext();
   const { isFavoriteAgent, toggleFavoriteAgent } = useFavorites();
   const isFavorite = isFavoriteAgent(agent?.id);
+  const starMutation = useStarAgentMutation();
+  const unstarMutation = useUnstarAgentMutation();
+
+  const isStarred = agent.isStarred ?? false;
+  const isLoading = starMutation.isLoading || unstarMutation.isLoading;
 
   const handleFavoriteClick = () => {
     if (agent) {
       toggleFavoriteAgent(agent.id);
+    }
+  };
+
+  const handleStarClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (isLoading || !agent) return;
+
+    if (isStarred) {
+      unstarMutation.mutate(agent.id);
+    } else {
+      starMutation.mutate(agent.id);
     }
   };
 
@@ -163,6 +182,31 @@ const AgentDetailContent: React.FC<AgentDetailContentProps> = ({ agent }) => {
 
       {/* Action button */}
       <div className="mb-4 mt-6 flex justify-center gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleStarClick}
+          disabled={isLoading}
+          title={
+            isStarred
+              ? localize('com_agents_unstar_agent', { name: agent?.name })
+              : localize('com_agents_star_agent', { name: agent?.name })
+          }
+          aria-label={
+            isStarred
+              ? localize('com_agents_unstar_agent', { name: agent?.name })
+              : localize('com_agents_star_agent', { name: agent?.name })
+          }
+          className={cn(isLoading && 'cursor-not-allowed opacity-50')}
+        >
+          <StarIcon
+            filled={isStarred}
+            className={cn(
+              'h-4 w-4 transition-colors',
+              isStarred ? 'text-yellow-500' : 'text-text-secondary hover:text-yellow-500',
+            )}
+          />
+        </Button>
         <Button
           variant="outline"
           size="icon"
