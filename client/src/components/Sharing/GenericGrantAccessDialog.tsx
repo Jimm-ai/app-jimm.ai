@@ -23,8 +23,13 @@ import {
 import UnifiedPeopleSearch from './PeoplePicker/UnifiedPeopleSearch';
 import PeoplePickerAdminSettings from './PeoplePickerAdminSettings';
 import PublicSharingToggle from './PublicSharingToggle';
+import DefaultStarredToggle from './DefaultStarredToggle';
 import { SelectedPrincipalsList } from './PeoplePicker';
 import { cn } from '~/utils';
+import { useUpdateAgentMutation, useStarAgentMutation } from '~/data-provider';
+import { useGetAgentByIdQuery } from '~/data-provider';
+import { SystemRoles } from 'librechat-data-provider';
+import { useAuthContext } from '~/hooks';
 
 export default function GenericGrantAccessDialog({
   resourceName,
@@ -45,8 +50,18 @@ export default function GenericGrantAccessDialog({
 }) {
   const localize = useLocalize();
   const { showToast } = useToastContext();
+  const { user } = useAuthContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
+
+  // Fetch agent data to get current is_default_starred value (for agents only)
+  const { data: agent } = useGetAgentByIdQuery(resourceId, {
+    enabled:
+      !!resourceId && resourceType === ResourceType.AGENT && user?.role === SystemRoles.ADMIN,
+  });
+
+  const updateAgentMutation = useUpdateAgentMutation();
+  const starAgentMutation = useStarAgentMutation();
 
   // Use shared hooks
   const { hasPeoplePickerAccess, peoplePickerTypeFilter } = usePeoplePickerPermissions();
@@ -71,6 +86,8 @@ export default function GenericGrantAccessDialog({
   const [defaultPermissionId, setDefaultPermissionId] = useState<AccessRoleIds | undefined>(
     config?.defaultViewerRoleId,
   );
+  const [isDefaultStarred, setIsDefaultStarred] = useState<boolean | undefined>(undefined);
+  const [hasDefaultStarredChanges, setHasDefaultStarredChanges] = useState(false);
 
   // Sync all shares with current shares when modal opens, marking existing vs new
   useEffect(() => {
@@ -80,6 +97,14 @@ export default function GenericGrantAccessDialog({
       setHasChanges(false);
     }
   }, [permissionsData, isModalOpen]);
+
+  // Sync default starred state when modal opens
+  useEffect(() => {
+    if (isModalOpen && resourceType === ResourceType.AGENT && agent) {
+      setIsDefaultStarred(agent.is_default_starred ?? false);
+      setHasDefaultStarredChanges(false);
+    }
+  }, [isModalOpen, resourceType, agent]);
 
   const resourceUrl = config?.getResourceUrl ? config?.getResourceUrl(resourceId || '') : '';
   const copyResourceUrl = useCopyToClipboard({ text: resourceUrl });
@@ -143,7 +168,7 @@ export default function GenericGrantAccessDialog({
 
   // Save all changes (unified save handler)
   const handleSave = async () => {
-    if (!allShares.length && !isPublic && !hasChanges) {
+    if (!allShares.length && !isPublic && !hasChanges && !hasDefaultStarredChanges) {
       return;
     }
 
@@ -169,6 +194,7 @@ export default function GenericGrantAccessDialog({
         return !allSharesMap.has(key);
       });
 
+      // Save permissions
       await updatePermissionsMutation.mutateAsync({
         resourceType,
         resourceId: resourceDbId,
@@ -180,6 +206,28 @@ export default function GenericGrantAccessDialog({
         },
       });
 
+      // Save default starred setting (for agents only)
+      if (hasDefaultStarredChanges && resourceType === ResourceType.AGENT && resourceId) {
+        const wasDefaultStarred = agent?.is_default_starred ?? false;
+        const isNowDefaultStarred = isDefaultStarred ?? false;
+
+        // Update agent's is_default_starred field
+        await updateAgentMutation.mutateAsync({
+          agent_id: resourceId,
+          data: { is_default_starred: isNowDefaultStarred },
+        });
+
+        // If enabling default starred, also star the agent for the current admin user
+        if (isNowDefaultStarred && !wasDefaultStarred && user?.role === SystemRoles.ADMIN) {
+          try {
+            await starAgentMutation.mutateAsync(resourceId);
+          } catch (starError) {
+            // Log but don't fail the save if starring fails
+            console.error('Error starring agent for admin:', starError);
+          }
+        }
+      }
+
       if (onGrantAccess) {
         onGrantAccess(allShares, isPublic, publicRole);
       }
@@ -190,6 +238,7 @@ export default function GenericGrantAccessDialog({
       });
 
       setHasChanges(false);
+      setHasDefaultStarredChanges(false);
     } catch (error) {
       console.error('Error updating permissions:', error);
       showToast({
@@ -206,7 +255,9 @@ export default function GenericGrantAccessDialog({
     setDefaultPermissionId(config?.defaultViewerRoleId);
     setIsPublic(currentIsPublic);
     setPublicRole(currentPublicRole || config?.defaultViewerRoleId || '');
+    setIsDefaultStarred(agent?.is_default_starred ?? false);
     setHasChanges(false);
+    setHasDefaultStarredChanges(false);
     setIsModalOpen(false);
   };
 
@@ -220,7 +271,7 @@ export default function GenericGrantAccessDialog({
 
   // Check if there are any changes to save
   const hasPublicChanges = isPublic !== currentIsPublic || publicRole !== currentPublicRole;
-  const submitButtonActive = hasChanges || hasPublicChanges;
+  const submitButtonActive = hasChanges || hasPublicChanges || hasDefaultStarredChanges;
 
   // Error handling
   if (permissionsError) {
@@ -340,6 +391,20 @@ export default function GenericGrantAccessDialog({
             resourceType={resourceType}
           />
 
+          {/* Default Starred Section (Admin only, Agents only) */}
+          {resourceType === ResourceType.AGENT && resourceId && (
+            <DefaultStarredToggle
+              agentId={resourceId}
+              agentDbId={resourceDbId}
+              resourceType={resourceType}
+              isDefaultStarred={isDefaultStarred}
+              onDefaultStarredChange={(checked) => {
+                setIsDefaultStarred(checked);
+                setHasDefaultStarredChanges(true);
+              }}
+            />
+          )}
+
           {/* Footer Actions */}
           <div className="flex justify-between pt-4">
             <div className="flex gap-2">
@@ -386,13 +451,14 @@ export default function GenericGrantAccessDialog({
                 onClick={handleSave}
                 disabled={
                   updatePermissionsMutation.isLoading ||
+                  updateAgentMutation.isLoading ||
                   !submitButtonActive ||
                   (hasChanges && !hasAtLeastOneOwner)
                 }
                 className="min-w-[120px]"
                 aria-label={localize('com_ui_save_changes')}
               >
-                {updatePermissionsMutation.isLoading ? (
+                {updatePermissionsMutation.isLoading || updateAgentMutation.isLoading ? (
                   <div className="flex items-center gap-2">
                     <Spinner className="h-4 w-4" />
                     {localize('com_ui_saving')}

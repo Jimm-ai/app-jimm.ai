@@ -108,9 +108,20 @@ const refreshListAvatars = async (agents, userId) => {
 const createAgentHandler = async (req, res) => {
   try {
     const validatedData = agentCreateSchema.parse(req.body);
-    const { tools = [], ...agentData } = removeNullishValues(validatedData);
+    const { tools = [], is_default_starred, ...agentData } = removeNullishValues(validatedData);
 
     const { id: userId } = req.user;
+
+    // Restrict is_default_starred to admins only
+    if (is_default_starred !== undefined) {
+      const { SystemRoles } = require('librechat-data-provider');
+      if (req.user.role !== SystemRoles.ADMIN) {
+        return res
+          .status(403)
+          .json({ error: 'Forbidden: Only admins can set default starred status' });
+      }
+      agentData.is_default_starred = is_default_starred;
+    }
 
     agentData.id = `agent_${nanoid()}`;
     agentData.author = userId;
@@ -258,10 +269,21 @@ const updateAgentHandler = async (req, res) => {
     const id = req.params.id;
     const validatedData = agentUpdateSchema.parse(req.body);
     // Preserve explicit null for avatar to allow resetting the avatar
-    const { avatar: avatarField, _id, ...rest } = validatedData;
+    const { avatar: avatarField, _id, is_default_starred, ...rest } = validatedData;
     const updateData = removeNullishValues(rest);
     if (avatarField === null) {
       updateData.avatar = avatarField;
+    }
+
+    // Restrict is_default_starred to admins only
+    if (is_default_starred !== undefined) {
+      const { SystemRoles } = require('librechat-data-provider');
+      if (req.user.role !== SystemRoles.ADMIN) {
+        return res
+          .status(403)
+          .json({ error: 'Forbidden: Only admins can set default starred status' });
+      }
+      updateData.is_default_starred = is_default_starred;
     }
 
     // Convert OCR to context in incoming updateData

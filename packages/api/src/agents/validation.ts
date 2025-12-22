@@ -77,6 +77,7 @@ export const agentCreateSchema = agentBaseSchema.extend({
   provider: z.string(),
   model: z.string().nullable(),
   tools: z.array(z.string()).optional().default([]),
+  is_default_starred: z.boolean().optional(),
 });
 
 /** Update schema extends base with all fields optional and additional update-only fields */
@@ -87,6 +88,7 @@ export const agentUpdateSchema = agentBaseSchema.extend({
   projectIds: z.array(z.string()).optional(),
   removeProjectIds: z.array(z.string()).optional(),
   isCollaborative: z.boolean().optional(),
+  is_default_starred: z.boolean().optional(),
 });
 
 interface ValidateAgentModelParams {

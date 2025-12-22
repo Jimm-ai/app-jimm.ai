@@ -241,6 +241,7 @@ export type Agent = {
   category?: string;
   support_contact?: SupportContact;
   isStarred?: boolean;
+  is_default_starred?: boolean;
 };
 
 export type TAgentsMap = Record<string, Agent | undefined>;
@@ -291,6 +292,7 @@ export type AgentUpdateParams = {
   | 'recursion_limit'
   | 'category'
   | 'support_contact'
+  | 'is_default_starred'
 >;
 
 export type AgentListParams = {

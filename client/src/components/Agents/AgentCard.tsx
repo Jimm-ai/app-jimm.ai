@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Label, OGDialog, OGDialogTrigger, Button } from '@librechat/client';
 import type t from 'librechat-data-provider';
-import { useLocalize, TranslationKeys, useAgentCategories } from '~/hooks';
+import { SystemRoles } from 'librechat-data-provider';
+import { useLocalize, TranslationKeys, useAgentCategories, useAuthContext } from '~/hooks';
 import { cn, renderAgentAvatar, getContactDisplayName } from '~/utils';
 import { useStarAgentMutation, useUnstarAgentMutation } from '~/data-provider/Agents';
 import AgentDetailContent from './AgentDetailContent';
@@ -18,6 +19,7 @@ interface AgentCardProps {
  */
 const AgentCard: React.FC<AgentCardProps> = ({ agent, onSelect, className = '' }) => {
   const localize = useLocalize();
+  const { user } = useAuthContext();
   const { categories } = useAgentCategories();
   const starMutation = useStarAgentMutation();
   const unstarMutation = useUnstarAgentMutation();
@@ -123,6 +125,17 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onSelect, className = '' }
           {categoryLabel && (
             <span className="absolute right-4 top-12 rounded-md bg-surface-hover px-2 py-0.5 text-xs text-text-secondary">
               {categoryLabel}
+            </span>
+          )}
+
+          {/* Default Starred indicator (admin only) */}
+          {user?.role === SystemRoles.ADMIN && agent.is_default_starred && (
+            <span
+              className="absolute right-4 top-20 flex items-center gap-1 rounded-md bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+              title={localize('com_ui_default_starred_description')}
+            >
+              <StarIcon filled={true} className="h-3 w-3" />
+              {localize('com_ui_default_starred')}
             </span>
           )}
 
