@@ -46,7 +46,26 @@ const AgentDetailContent: React.FC<AgentDetailContentProps> = ({ agent }) => {
   const unstarMutation = useUnstarAgentMutation();
 
   const isStarred = agent.isStarred ?? false;
+  const isDefaultStarred = agent.is_default_starred ?? false;
   const isLoading = starMutation.isLoading || unstarMutation.isLoading;
+
+  let starButtonTitle: string;
+  if (isDefaultStarred) {
+    starButtonTitle = localize('com_ui_default_starred_description');
+  } else if (isStarred) {
+    starButtonTitle = localize('com_agents_unstar_agent', { name: agent?.name });
+  } else {
+    starButtonTitle = localize('com_agents_star_agent', { name: agent?.name });
+  }
+
+  let starIconClassName: string;
+  if (isDefaultStarred) {
+    starIconClassName = 'text-[#084C4F]';
+  } else if (isStarred) {
+    starIconClassName = 'text-yellow-500';
+  } else {
+    starIconClassName = 'text-text-secondary hover:text-yellow-500';
+  }
 
   const handleFavoriteClick = () => {
     if (agent) {
@@ -187,11 +206,7 @@ const AgentDetailContent: React.FC<AgentDetailContentProps> = ({ agent }) => {
           size="icon"
           onClick={handleStarClick}
           disabled={isLoading}
-          title={
-            isStarred
-              ? localize('com_agents_unstar_agent', { name: agent?.name })
-              : localize('com_agents_star_agent', { name: agent?.name })
-          }
+          title={starButtonTitle}
           aria-label={
             isStarred
               ? localize('com_agents_unstar_agent', { name: agent?.name })
@@ -200,11 +215,8 @@ const AgentDetailContent: React.FC<AgentDetailContentProps> = ({ agent }) => {
           className={cn(isLoading && 'cursor-not-allowed opacity-50')}
         >
           <StarIcon
-            filled={isStarred}
-            className={cn(
-              'h-4 w-4 transition-colors',
-              isStarred ? 'text-yellow-500' : 'text-text-secondary hover:text-yellow-500',
-            )}
+            filled={isDefaultStarred || isStarred}
+            className={cn('h-4 w-4 transition-colors', starIconClassName)}
           />
         </Button>
         <Button
