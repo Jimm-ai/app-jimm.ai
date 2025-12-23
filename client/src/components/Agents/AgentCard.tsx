@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Label, OGDialog, OGDialogTrigger, Button } from '@librechat/client';
 import type t from 'librechat-data-provider';
-import { useLocalize, TranslationKeys, useAgentCategories } from '~/hooks';
+import { SystemRoles } from 'librechat-data-provider';
+import { useLocalize, TranslationKeys, useAgentCategories, useAuthContext } from '~/hooks';
 import { cn, renderAgentAvatar, getContactDisplayName } from '~/utils';
 import { useStarAgentMutation, useUnstarAgentMutation } from '~/data-provider/Agents';
 import AgentDetailContent from './AgentDetailContent';
@@ -19,15 +20,17 @@ interface AgentCardProps {
 const AgentCard: React.FC<AgentCardProps> = ({ agent, onSelect, className = '' }) => {
   const localize = useLocalize();
   const { categories } = useAgentCategories();
+  const { user } = useAuthContext();
   const starMutation = useStarAgentMutation();
   const unstarMutation = useUnstarAgentMutation();
 
   const isStarred = agent.isStarred ?? false;
   const isDefaultStarred = agent.is_default_starred ?? false;
   const isLoading = starMutation.isLoading || unstarMutation.isLoading;
+  const isAdmin = user?.role === SystemRoles.ADMIN;
 
   let starButtonTitle: string;
-  if (isDefaultStarred) {
+  if (isDefaultStarred && isAdmin) {
     starButtonTitle = localize('com_ui_default_starred_description');
   } else if (isStarred) {
     starButtonTitle = localize('com_agents_unstar_agent', { name: agent.name });
@@ -36,8 +39,10 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onSelect, className = '' }
   }
 
   let starIconClassName: string;
-  if (isDefaultStarred) {
+  if (isDefaultStarred && isAdmin) {
     starIconClassName = 'text-[#084C4F]';
+  } else if (isDefaultStarred) {
+    starIconClassName = 'text-yellow-500';
   } else if (isStarred) {
     starIconClassName = 'text-yellow-500';
   } else {
