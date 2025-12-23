@@ -662,6 +662,7 @@ const getListAgentsByAccess = async ({
     category: 1,
     support_contact: 1,
     is_promoted: 1,
+    is_default_starred: 1,
   }).sort({ updatedAt: -1, _id: 1 });
 
   // Only apply limit if pagination is requested
@@ -731,6 +732,7 @@ const getListAgents = async (searchParameter) => {
       // @deprecated - isCollaborative replaced by ACL permissions
       isCollaborative: 1,
       category: 1,
+      is_default_starred: 1,
     }).lean()
   ).map((agent) => {
     if (agent.author?.toString() !== author) {

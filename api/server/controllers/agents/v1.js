@@ -240,6 +240,7 @@ const getAgentHandler = async (req, res, expandProperties = false) => {
         // @deprecated - isCollaborative replaced by ACL permissions
         isCollaborative: agent.isCollaborative,
         isPublic: agent.isPublic,
+        is_default_starred: agent.is_default_starred,
         version: agent.version,
         // Safe metadata
         createdAt: agent.createdAt,
