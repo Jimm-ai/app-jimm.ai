@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef, useCallback } from 'react';
 import { isAgentsEndpoint, isAssistantsEndpoint, LocalStorageKeys } from 'librechat-data-provider';
 import type * as t from 'librechat-data-provider';
 import type { SelectedValues } from '~/common';
@@ -10,12 +10,14 @@ export default function useSelectorEffects({
   conversation,
   assistantsMap,
   setSelectedValues,
+  startupConfig,
 }: {
   index?: number;
   agentsMap: t.TAgentsMap | undefined;
   assistantsMap: t.TAssistantsMap | undefined;
   conversation: t.TConversation | null;
   setSelectedValues: React.Dispatch<React.SetStateAction<SelectedValues>>;
+  startupConfig?: t.TStartupConfig;
 }) {
   const { setOption } = useSetIndexOptions();
   const agents: t.Agent[] = useMemo(() => {
@@ -40,16 +42,36 @@ export default function useSelectorEffects({
     if (selectedAgentId == null && agents.length > 0) {
       let agent_id = localStorage.getItem(`${LocalStorageKeys.AGENT_ID_PREFIX}${index}`);
       if (agent_id == null) {
-        agent_id = agents[0]?.id;
+        const defaultAgentId = startupConfig?.defaultAgentId;
+        if (defaultAgentId && agentsMap?.[defaultAgentId]) {
+          agent_id = defaultAgentId;
+        } else {
+          agent_id = agents[0]?.id;
+        }
       }
       const agent = agentsMap?.[agent_id];
 
       if (agent !== undefined) {
         setOption('model')('');
         setOption('agent_id')(agent_id);
+      } else {
+        console.warn('useSelectorEffects - Agent not found in agentsMap:', agent_id);
       }
+    } else {
+      console.warn('useSelectorEffects - Conditions not met:', {
+        selectedAgentId,
+        agentsLength: agents.length,
+      });
     }
-  }, [index, agents, selectedAgentId, agentsMap, endpoint, setOption]);
+  }, [
+    index,
+    agents,
+    selectedAgentId,
+    agentsMap,
+    endpoint,
+    setOption,
+    startupConfig?.defaultAgentId,
+  ]);
   useEffect(() => {
     if (!isAssistantsEndpoint(endpoint as string)) {
       return;
@@ -69,15 +91,18 @@ export default function useSelectorEffects({
 
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const debouncedSetSelectedValues = (values: SelectedValues) => {
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
+  const debouncedSetSelectedValues = useCallback(
+    (values: SelectedValues) => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
 
-    debounceTimeoutRef.current = setTimeout(() => {
-      setSelectedValues(values);
-    }, 150);
-  };
+      debounceTimeoutRef.current = setTimeout(() => {
+        setSelectedValues(values);
+      }, 150);
+    },
+    [setSelectedValues],
+  );
 
   useEffect(() => {
     if (!conversation?.endpoint) {
@@ -121,5 +146,6 @@ export default function useSelectorEffects({
     conversation?.endpoint,
     conversation?.agent_id,
     conversation?.assistant_id,
+    debouncedSetSelectedValues,
   ]);
 }

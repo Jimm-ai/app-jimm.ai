@@ -130,6 +130,7 @@ export function ModelSelectorProvider({ children, startupConfig }: ModelSelector
       : null,
     assistantsMap,
     setSelectedValues,
+    startupConfig,
   });
 
   const [searchValue, setSearchValueState] = useState('');

@@ -122,7 +122,17 @@ const useNewConvo = (index = 0) => {
             isAgentsEndpoint(defaultEndpoint) &&
             ((conversation.agent_id && conversation.agent_id !== Constants.EPHEMERAL_AGENT_ID) ||
               (storedAgentId && storedAgentId !== Constants.EPHEMERAL_AGENT_ID));
-          if (
+          const savedAgentId = localStorage.getItem(`${LocalStorageKeys.AGENT_ID_PREFIX}${index}`);
+          const hasNeverUsedAgents = !savedAgentId && !storedAgentId;
+          const defaultAgentId = startupConfig?.defaultAgentId;
+          const shouldUseDefaultAgent =
+            hasNeverUsedAgents &&
+            defaultAgentId &&
+            hasAgentAccess &&
+            endpointsConfig?.[EModelEndpoint.agents];
+          if (shouldUseDefaultAgent) {
+            defaultEndpoint = EModelEndpoint.agents;
+          } else if (
             defaultEndpoint &&
             isAgentsEndpoint(defaultEndpoint) &&
             !hasAgentAccess &&
@@ -187,6 +197,15 @@ const useNewConvo = (index = 0) => {
 
           if (currentAssistantId && !isAssistantEndpoint) {
             conversation.assistant_id = undefined;
+          }
+
+          if (
+            hasNeverUsedAgents &&
+            isAgentsEndpoint(defaultEndpoint) &&
+            defaultAgentId &&
+            !conversation.agent_id
+          ) {
+            conversation.agent_id = defaultAgentId;
           }
 
           const models = modelsConfig?.[defaultEndpoint] ?? [];

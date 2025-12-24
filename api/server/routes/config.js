@@ -1,7 +1,12 @@
 const express = require('express');
 const { logger } = require('@librechat/data-schemas');
 const { isEnabled, getBalanceConfig } = require('@librechat/api');
-const { Constants, CacheKeys, defaultSocialLogins } = require('librechat-data-provider');
+const {
+  Constants,
+  CacheKeys,
+  defaultSocialLogins,
+  EModelEndpoint,
+} = require('librechat-data-provider');
 const { getLdapConfig } = require('~/server/services/Config/ldap');
 const { getAppConfig } = require('~/server/services/Config/app');
 const { getProjectByName } = require('~/models/Project');
@@ -58,6 +63,15 @@ router.get('/', async function (req, res) {
 
     const balanceConfig = getBalanceConfig(appConfig);
 
+    // Safely get defaultAgentId
+    let defaultAgentId;
+    try {
+      defaultAgentId = appConfig?.endpoints?.[EModelEndpoint.agents]?.defaultAgentId || undefined;
+    } catch (err) {
+      logger.warn('Error accessing defaultAgentId from appConfig:', err);
+      defaultAgentId = undefined;
+    }
+
     /** @type {TStartupConfig} */
     const payload = {
       appTitle: process.env.APP_TITLE || 'LibreChat',
@@ -97,6 +111,7 @@ router.get('/', async function (req, res) {
       interface: appConfig?.interfaceConfig,
       turnstile: appConfig?.turnstileConfig,
       modelSpecs: appConfig?.modelSpecs,
+      defaultAgentId,
       balance: balanceConfig,
       sharedLinksEnabled,
       publicSharedLinksEnabled,
