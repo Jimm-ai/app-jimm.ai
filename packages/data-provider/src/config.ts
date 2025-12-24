@@ -285,6 +285,7 @@ export const agentsEndpointSchema = baseEndpointSchema
         .array(z.nativeEnum(AgentCapabilities))
         .optional()
         .default(defaultAgentCapabilities),
+      defaultAgentId: z.string().optional(),
     }),
   )
   .default({
@@ -666,6 +667,7 @@ export type TStartupConfig = {
   customFooter?: string;
   modelSpecs?: TSpecsConfig;
   modelDescriptions?: Record<string, Record<string, string>>;
+  defaultAgentId?: string;
   sharedLinksEnabled: boolean;
   publicSharedLinksEnabled: boolean;
   analyticsGtmId?: string;

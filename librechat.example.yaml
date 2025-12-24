@@ -253,6 +253,10 @@ endpoints:
   #   minRelevanceScore: 0.45
   #   # (optional) Agent Capabilities available to all users. Omit the ones you wish to exclude. Defaults to list below.
   #   capabilities: ["execute_code", "file_search", "actions", "tools"]
+  #   # (optional) Default agent ID for new users on first chat interface open
+  #   # Only applies to first-time users (new signups) who haven't selected an agent yet
+  #   # Does not override user's last-used agent preference after initial interaction
+  #   defaultAgentId: "agent-id-here"
   custom:
     # Groq Example
     - name: 'groq'
