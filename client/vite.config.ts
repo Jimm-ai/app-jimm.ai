@@ -61,8 +61,8 @@ export default defineConfig(({ command }) => ({
       },
       includeAssets: [],
       manifest: {
-        name: 'LibreChat',
-        short_name: 'LibreChat',
+        name: 'Jimm.ai',
+        short_name: 'Jimm.ai',
         display: 'standalone',
         background_color: '#000000',
         theme_color: '#009688',
