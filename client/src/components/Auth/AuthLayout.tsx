@@ -60,11 +60,11 @@ function AuthLayout({
     <div className="relative flex min-h-screen flex-col bg-white dark:bg-gray-900">
       <Banner />
       <BlinkAnimation active={isFetching}>
-        <div className="mt-6 h-20 w-full bg-cover">
+        <div className="mt-6 h-40 w-full bg-cover">
           <img
             src="assets/Jimm_Final-23.svg"
             className="h-full w-full object-contain"
-            alt={localize('com_ui_logo', { 0: startupConfig?.appTitle ?? 'LibreChat' })}
+            alt={localize('com_ui_logo', { 0: startupConfig?.appTitle ?? 'Jimm.ai' })}
           />
         </div>
       </BlinkAnimation>

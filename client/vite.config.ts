@@ -72,11 +72,6 @@ export default defineConfig(({ command }) => ({
             sizes: 'any',
             type: 'image/svg+xml',
           },
-          {
-            src: 'assets/Jimm_Final-30.svg',
-            sizes: 'any',
-            type: 'image/png',
-          },
         ],
       },
     }),
