@@ -8,15 +8,18 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
-const backendPort = process.env.BACKEND_PORT && Number(process.env.BACKEND_PORT) || 3080;
-const backendURL = process.env.HOST ? `http://${process.env.HOST}:${backendPort}` : `http://localhost:${backendPort}`;
+const backendPort = (process.env.BACKEND_PORT && Number(process.env.BACKEND_PORT)) || 3080;
+const backendURL = process.env.HOST
+  ? `http://${process.env.HOST}:${backendPort}`
+  : `http://localhost:${backendPort}`;
 
 export default defineConfig(({ command }) => ({
   base: '',
   server: {
-    allowedHosts: process.env.VITE_ALLOWED_HOSTS && process.env.VITE_ALLOWED_HOSTS.split(',') || [],
+    allowedHosts:
+      (process.env.VITE_ALLOWED_HOSTS && process.env.VITE_ALLOWED_HOSTS.split(',')) || [],
     host: process.env.HOST || 'localhost',
-    port: process.env.PORT && Number(process.env.PORT) || 3090,
+    port: (process.env.PORT && Number(process.env.PORT)) || 3090,
     strictPort: false,
     proxy: {
       '/api': {
@@ -65,30 +68,14 @@ export default defineConfig(({ command }) => ({
         theme_color: '#009688',
         icons: [
           {
-            src: 'assets/favicon-32x32.png',
-            sizes: '32x32',
-            type: 'image/png',
+            src: 'assets/Jimm_Final-30.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
           },
           {
-            src: 'assets/favicon-16x16.png',
-            sizes: '16x16',
+            src: 'assets/Jimm_Final-30.svg',
+            sizes: 'any',
             type: 'image/png',
-          },
-          {
-            src: 'assets/apple-touch-icon-180x180.png',
-            sizes: '180x180',
-            type: 'image/png',
-          },
-          {
-            src: 'assets/icon-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-          },
-          {
-            src: 'assets/maskable-icon.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
           },
         ],
       },
